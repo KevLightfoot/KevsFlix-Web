@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KevsFlix</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <div id="splashScreen">
+    <h1 id="splashLogo">KevsFlix</h1>
+  </div>
+
+  <header>
+    <h1>KevsFlix</h1>
+    <button id="toggleFormBtn">+ Add Show</button>
+    <button id="toggleFormBtnM">+ Add Movie</button>
+
+  </header>
+  
+
+  <section id="addShowForm" class="form hidden">
+    <input id="searchInput" placeholder="Search show:">
+    <button id="searchShowBtn">Search</button>
+    <div id="searchResults" class="search-results"></div>
+  </section>
+
+  <section id="addMovieForm" class="form hidden">
+    <input id="searchInputM" placeholder="Search Movie:">
+    <button id="searchMovieBtn">Search</button>
+    <div id="searchResultsM" class="search-results"></div>
+  </section>
+
+  
+
+  <section>
+    <h2>Your Shows</h2>
+    <div id="showsGrid" class="grid"></div>
+  </section>
+
+  <section>
+    <h2>Your Movies</h2>
+    <div id="moviesGrid" class="grid"></div>
+  </section>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
