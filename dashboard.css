@@ -325,3 +325,57 @@ button:active {
     pointer-events: none;
   }
 }
+
+/* =========================
+   PROFILE CONTROLS
+========================= */
+
+.profile-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile-controls label {
+  color: #bbb;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.profile-controls select {
+  min-width: 130px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: #151515;
+  color: white;
+  outline: none;
+}
+
+#addProfileBtn {
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+#profilePinInput {
+  max-width: 180px;
+}
+
+@media (max-width: 600px) {
+  .profile-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .profile-controls select {
+    flex: 1;
+  }
+
+  #addProfileBtn {
+    flex: 1;
+  }
+}

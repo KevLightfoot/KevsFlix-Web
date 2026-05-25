@@ -12,11 +12,22 @@
 
   <header>
     <h1>KevsFlix</h1>
+
+    <div class="profile-controls">
+      <label for="profileSelect">Profile</label>
+      <select id="profileSelect"></select>
+      <button id="addProfileBtn">+ Profile</button>
+    </div>
+
     <button id="toggleFormBtn">+ Add Show</button>
     <button id="toggleFormBtnM">+ Add Movie</button>
-
   </header>
-  
+
+  <section id="profileForm" class="form hidden">
+    <input id="profileNameInput" placeholder="Profile name">
+    <input id="profilePinInput" placeholder="Optional PIN" type="password" inputmode="numeric">
+    <button id="saveProfileBtn">Create Profile</button>
+  </section>
 
   <section id="addShowForm" class="form hidden">
     <input id="searchInput" placeholder="Search show:">
@@ -30,15 +41,13 @@
     <div id="searchResultsM" class="search-results"></div>
   </section>
 
-  
-
   <section>
-    <h2>Your Shows</h2>
+    <h2 id="showsTitle">Your Shows</h2>
     <div id="showsGrid" class="grid"></div>
   </section>
 
   <section>
-    <h2>Your Movies</h2>
+    <h2 id="moviesTitle">Your Movies</h2>
     <div id="moviesGrid" class="grid"></div>
   </section>
 

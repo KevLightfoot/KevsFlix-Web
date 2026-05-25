@@ -1,5 +1,9 @@
-const SHOWS_KEY = "shows";
-const MOVIES_KEY = "movies";
+const OLD_SHOWS_KEY = "shows";
+const OLD_MOVIES_KEY = "movies";
+
+const PROFILES_KEY = "kevsflix:profiles";
+const ACTIVE_PROFILE_KEY = "kevsflix:activeProfileId";
+
 const TMDB_API_KEY = "a04a3b6afbc3480a58b0ce9e85c5a10c";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
@@ -10,7 +14,6 @@ const addMovieForm = document.getElementById("addMovieForm");
 const showsGrid = document.getElementById("showsGrid");
 const moviesGrid = document.getElementById("moviesGrid");
 
-
 const searchInput = document.getElementById("searchInput");
 const searchInputM = document.getElementById("searchInputM");
 const searchShowBtn = document.getElementById("searchShowBtn");
@@ -18,16 +21,60 @@ const searchMovieBtn = document.getElementById("searchMovieBtn");
 const searchResults = document.getElementById("searchResults");
 const searchResultsM = document.getElementById("searchResultsM");
 
+const profileSelect = document.getElementById("profileSelect");
+const addProfileBtn = document.getElementById("addProfileBtn");
+const profileForm = document.getElementById("profileForm");
+const profileNameInput = document.getElementById("profileNameInput");
+const profilePinInput = document.getElementById("profilePinInput");
+const saveProfileBtn = document.getElementById("saveProfileBtn");
+const showsTitle = document.getElementById("showsTitle");
+const moviesTitle = document.getElementById("moviesTitle");
 
 toggleFormBtn.addEventListener("click", () => {
   addShowForm.classList.toggle("hidden");
   addMovieForm.classList.add("hidden");
+  profileForm.classList.add("hidden");
 });
 
 toggleFormBtnM.addEventListener("click", () => {
   addMovieForm.classList.toggle("hidden");
   addShowForm.classList.add("hidden");
+  profileForm.classList.add("hidden");
+});
 
+addProfileBtn.addEventListener("click", () => {
+  profileForm.classList.toggle("hidden");
+  addShowForm.classList.add("hidden");
+  addMovieForm.classList.add("hidden");
+  profileNameInput.focus();
+});
+
+saveProfileBtn.addEventListener("click", createProfileFromForm);
+
+profileNameInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    createProfileFromForm();
+  }
+});
+
+profileSelect.addEventListener("change", () => {
+  const profileId = profileSelect.value;
+  const profile = getProfileById(profileId);
+
+  if (!profile) return;
+
+  if (profile.pin) {
+    const pinAttempt = prompt(`Enter PIN for ${profile.name}:`);
+
+    if (pinAttempt !== profile.pin) {
+      alert("Wrong PIN.");
+      profileSelect.value = getActiveProfileId();
+      return;
+    }
+  }
+
+  setActiveProfileId(profileId);
+  renderApp();
 });
 
 function formatTime(seconds) {
@@ -50,30 +97,172 @@ function makeId() {
   return crypto.randomUUID();
 }
 
- function getShows() {
-    return JSON.parse(localStorage.getItem(SHOWS_KEY)) || [];
+function safeParse(value, fallback) {
+  try {
+    return JSON.parse(value) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function storageKey(type) {
+  return `kevsflix:${getActiveProfileId()}:${type}`;
+}
+
+function getProfiles() {
+  return safeParse(localStorage.getItem(PROFILES_KEY), []);
+}
+
+function saveProfiles(profiles) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+}
+
+function getProfileById(profileId) {
+  return getProfiles().find((profile) => profile.id === profileId);
+}
+
+function getActiveProfileId() {
+  return localStorage.getItem(ACTIVE_PROFILE_KEY);
+}
+
+function setActiveProfileId(profileId) {
+  localStorage.setItem(ACTIVE_PROFILE_KEY, profileId);
+}
+
+function getActiveProfile() {
+  return getProfileById(getActiveProfileId());
+}
+
+function createDefaultProfileIfNeeded() {
+  let profiles = getProfiles();
+
+  if (profiles.length > 0) {
+    if (!getActiveProfileId() || !getProfileById(getActiveProfileId())) {
+      setActiveProfileId(profiles[0].id);
+    }
+
+    return;
+  }
+
+  const defaultProfile = {
+    id: makeId(),
+    name: "Kevin",
+    pin: "",
+    createdAt: new Date().toISOString()
+  };
+
+  profiles = [defaultProfile];
+  saveProfiles(profiles);
+  setActiveProfileId(defaultProfile.id);
+
+  migrateOldLibraryToProfile(defaultProfile.id);
+}
+
+function migrateOldLibraryToProfile(profileId) {
+  const oldShows = safeParse(localStorage.getItem(OLD_SHOWS_KEY), []);
+  const oldMovies = safeParse(localStorage.getItem(OLD_MOVIES_KEY), []);
+
+  if (oldShows.length > 0) {
+    localStorage.setItem(`kevsflix:${profileId}:shows`, JSON.stringify(oldShows));
+  }
+
+  if (oldMovies.length > 0) {
+    localStorage.setItem(`kevsflix:${profileId}:movies`, JSON.stringify(oldMovies));
+  }
+
+  [...oldShows, ...oldMovies].forEach((item) => {
+    const oldProgressKey = `progress:${item.url}`;
+    const oldProgress = localStorage.getItem(oldProgressKey);
+
+    if (oldProgress !== null) {
+      localStorage.setItem(`kevsflix:${profileId}:progress:${item.url}`, oldProgress);
+    }
+  });
+}
+
+function createProfileFromForm() {
+  const name = profileNameInput.value.trim();
+  const pin = profilePinInput.value.trim();
+
+  if (!name) {
+    alert("Type a profile name first.");
+    return;
+  }
+
+  const profiles = getProfiles();
+
+  const newProfile = {
+    id: makeId(),
+    name,
+    pin,
+    createdAt: new Date().toISOString()
+  };
+
+  profiles.push(newProfile);
+  saveProfiles(profiles);
+  setActiveProfileId(newProfile.id);
+
+  profileNameInput.value = "";
+  profilePinInput.value = "";
+  profileForm.classList.add("hidden");
+
+  renderApp();
+}
+
+function getShows() {
+  return safeParse(localStorage.getItem(storageKey("shows")), []);
 }
 
 function getMovies() {
-    return JSON.parse(localStorage.getItem(MOVIES_KEY)) || [];
+  return safeParse(localStorage.getItem(storageKey("movies")), []);
 }
 
-
-function saveShows(shows){
-    localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+function saveShows(shows) {
+  localStorage.setItem(storageKey("shows"), JSON.stringify(shows));
 }
 
- function saveMovies(movies){
-    localStorage.setItem(MOVIES_KEY, JSON.stringify(movies));
+function saveMovies(movies) {
+  localStorage.setItem(storageKey("movies"), JSON.stringify(movies));
 }
 
 function getProgressForUrl(url) {
-    const key = `progress:${url}`;
-    return Number(localStorage.getItem(key)) || 0;
+  const key = `${storageKey("progress")}:${url}`;
+  return Number(localStorage.getItem(key)) || 0;
 }
 
-async function renderShows() {
-  const shows = await getShows();
+// Temporary manual progress saver.
+// Later, this should be replaced by real player progress events.
+function saveProgressForUrl(url, seconds) {
+  const key = `${storageKey("progress")}:${url}`;
+  localStorage.setItem(key, String(seconds));
+}
+
+function renderProfileSelect() {
+  const profiles = getProfiles();
+  const activeProfileId = getActiveProfileId();
+
+  profileSelect.innerHTML = "";
+
+  profiles.forEach((profile) => {
+    const option = document.createElement("option");
+    option.value = profile.id;
+    option.textContent = profile.pin ? `${profile.name} 🔒` : profile.name;
+    profileSelect.appendChild(option);
+  });
+
+  profileSelect.value = activeProfileId;
+}
+
+function renderTitles() {
+  const profile = getActiveProfile();
+  const name = profile ? profile.name : "Your";
+
+  showsTitle.textContent = `${name}'s Shows`;
+  moviesTitle.textContent = `${name}'s Movies`;
+}
+
+function renderShows() {
+  const shows = getShows();
 
   showsGrid.innerHTML = "";
 
@@ -83,7 +272,7 @@ async function renderShows() {
   }
 
   for (const show of shows) {
-    const progress = await getProgressForUrl(show.url);
+    const progress = getProgressForUrl(show.url);
 
     const card = document.createElement("div");
     card.className = "card";
@@ -99,44 +288,44 @@ async function renderShows() {
       <div class="card-info">
         <h3>${show.title}</h3>
         <p>S${show.season}E${show.episode}</p>
-        <p>${formatTime(progress)}</p>
+        <p>Last saved: ${formatTime(progress)}</p>
 
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div class="progress-fill" style="width: ${progress ? "35%" : "0%"}"></div>
         </div>
       </div>
     `;
 
     card.addEventListener("click", () => {
-        window.open(show.url, "_blank");
+      window.open(show.url, "_blank");
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
 
-    deleteBtn.addEventListener("click", async (event) => {
+    deleteBtn.addEventListener("click", (event) => {
       event.stopPropagation();
 
       const updatedShows = shows.filter((item) => item.id !== show.id);
-      await saveShows(updatedShows);
-      await renderShows();
+      saveShows(updatedShows);
+      renderShows();
     });
 
     showsGrid.appendChild(card);
   }
 }
 
-async function renderMovies(){
-  const movies = await getMovies();
+function renderMovies() {
+  const movies = getMovies();
 
   moviesGrid.innerHTML = "";
-  
-  if(movies.length === 0){
+
+  if (movies.length === 0) {
     moviesGrid.innerHTML = "<p>No Movies added yet. Click + Add Movie.</p>";
     return;
   }
 
-  for(const movie of movies){
-    const progress = await getProgressForUrl(movie.url);
+  for (const movie of movies) {
+    const progress = getProgressForUrl(movie.url);
 
     const card = document.createElement("div");
     card.className = "card";
@@ -151,40 +340,39 @@ async function renderMovies(){
 
       <div class="card-info">
         <h3>${movie.title}</h3>
-        <p>${formatTime(progress)}</p>
+        <p>Last saved: ${formatTime(progress)}</p>
 
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div class="progress-fill" style="width: ${progress ? "35%" : "0%"}"></div>
         </div>
       </div>
     `;
 
-    card.addEventListener("click", async () => {
+    card.addEventListener("click", () => {
       window.open(movie.url, "_blank");
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
 
-    deleteBtn.addEventListener("click", async (event) => {
+    deleteBtn.addEventListener("click", (event) => {
       event.stopPropagation();
 
       const updatedMovies = movies.filter((item) => item.id !== movie.id);
-      await saveMovies(updatedMovies);
-      await renderMovies();
-    })
+      saveMovies(updatedMovies);
+      renderMovies();
+    });
+
     moviesGrid.appendChild(card);
   }
 }
 
-
-
-async function addShowToLibrary(show, posterUrl, season, episode) {
+function addShowToLibrary(show, posterUrl, season, episode) {
   if (!season || !episode || season < 1 || episode < 1) {
     alert("Season and episode must be 1 or higher.");
     return;
   }
 
-  const shows = await getShows();
+  const shows = getShows();
 
   shows.push({
     id: makeId(),
@@ -193,37 +381,39 @@ async function addShowToLibrary(show, posterUrl, season, episode) {
     posterUrl,
     url: `https://mappl.tv/watch/tv/${show.id}-${season}-${episode}`,
     season,
-    episode
+    episode,
+    addedAt: new Date().toISOString()
   });
 
-  await saveShows(shows);
+  saveShows(shows);
 
   searchInput.value = "";
   searchResults.innerHTML = "";
   addShowForm.classList.add("hidden");
 
-  await renderShows();
+  renderShows();
 }
 
-async function addMoviesToLibrary(movie, posterUrl){
-  const movies = await getMovies();
+function addMoviesToLibrary(movie, posterUrl) {
+  const movies = getMovies();
+
   movies.push({
     id: makeId(),
     tmdbId: movie.id,
     title: movie.title,
     posterUrl,
     url: `https://mappl.tv/watch/movie/${movie.id}`,
+    addedAt: new Date().toISOString()
   });
 
-  await saveMovies(movies);
+  saveMovies(movies);
 
   searchInputM.value = "";
   searchResultsM.innerHTML = "";
   addMovieForm.classList.add("hidden");
 
-  await renderMovies()
+  renderMovies();
 }
-
 
 async function searchShows() {
   const query = searchInput.value.trim();
@@ -293,19 +483,19 @@ async function searchShows() {
       const seasonInput = card.querySelector(".season-input");
       const episodeInput = card.querySelector(".episode-input");
 
-      addPilotBtn.addEventListener("click", async () => {
-        await addShowToLibrary(show, posterUrl, 1, 1);
+      addPilotBtn.addEventListener("click", () => {
+        addShowToLibrary(show, posterUrl, 1, 1);
       });
 
       episodesBtn.addEventListener("click", () => {
         episodeBox.classList.toggle("hidden");
       });
 
-      addEpisodeBtn.addEventListener("click", async () => {
+      addEpisodeBtn.addEventListener("click", () => {
         const season = Number(seasonInput.value);
         const episode = Number(episodeInput.value);
 
-        await addShowToLibrary(show, posterUrl, season, episode);
+        addShowToLibrary(show, posterUrl, season, episode);
       });
 
       searchResults.appendChild(card);
@@ -317,7 +507,7 @@ async function searchShows() {
   }
 }
 
-async function searchMovies(){
+async function searchMovies() {
   const query = searchInputM.value.trim();
 
   if (!query) {
@@ -342,46 +532,52 @@ async function searchMovies(){
     }
 
     data.results.slice(0, 8).forEach((movie) => {
-  const posterUrl = movie.poster_path
-    ? `${TMDB_IMAGE_BASE}${movie.poster_path}`
-    : "";
+      const posterUrl = movie.poster_path
+        ? `${TMDB_IMAGE_BASE}${movie.poster_path}`
+        : "";
 
-  const releaseYear = movie.release_date
-    ? movie.release_date.slice(0, 4)
-    : "Unknown";
+      const releaseYear = movie.release_date
+        ? movie.release_date.slice(0, 4)
+        : "Unknown";
 
-  const card = document.createElement("div");
-  card.className = "result-card";
+      const card = document.createElement("div");
+      card.className = "result-card";
 
-  card.innerHTML = `
-    <div
-      class="result-poster"
-      style="background-image: url('${posterUrl}')"
-    ></div>
+      card.innerHTML = `
+        <div
+          class="result-poster"
+          style="background-image: url('${posterUrl}')"
+        ></div>
 
-    <h3>${movie.title}</h3>
-    <p>${releaseYear}</p>
+        <h3>${movie.title}</h3>
+        <p>${releaseYear}</p>
 
-    <div class="result-actions">
-      <button class="add-movie-btn">Add ${movie.title}</button>
-    </div>
-  `;
+        <div class="result-actions">
+          <button class="add-movie-btn">Add ${movie.title}</button>
+        </div>
+      `;
 
-  const addMovieBtn = card.querySelector(".add-movie-btn");
+      const addMovieBtn = card.querySelector(".add-movie-btn");
 
-  addMovieBtn.addEventListener("click", async () => {
-    await addMoviesToLibrary(movie, posterUrl);
-  });
+      addMovieBtn.addEventListener("click", () => {
+        addMoviesToLibrary(movie, posterUrl);
+      });
 
-  searchResultsM.appendChild(card);
-  });
-  
-} catch (error) {
+      searchResultsM.appendChild(card);
+    });
+  } catch (error) {
     console.error("TMDB movie search failed:", error);
 
     searchResultsM.innerHTML =
       "<p>Search failed. Check your API key or connection.</p>";
   }
+}
+
+function renderApp() {
+  renderProfileSelect();
+  renderTitles();
+  renderShows();
+  renderMovies();
 }
 
 searchShowBtn.addEventListener("click", searchShows);
@@ -399,5 +595,5 @@ searchInputM.addEventListener("keydown", (event) => {
   }
 });
 
-renderShows();
-renderMovies();
+createDefaultProfileIfNeeded();
+renderApp();
