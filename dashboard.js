@@ -38,6 +38,16 @@ const playerModal = document.getElementById("playerModal");
 const playerTitle = document.getElementById("playerTitle");
 const playerFrame = document.getElementById("playerFrame");
 const closePlayerBtn = document.getElementById("closePlayerBtn");
+const saveProgressBtn = document.getElementById("saveProgressBtn");
+const playerNextEpisodeBtn = document.getElementById("playerNextEpisodeBtn");
+
+const savedProgressText = document.getElementById("savedProgressText");
+const progressInputs = document.getElementById("progressInputs");
+const hoursInput = document.getElementById("hoursInput");
+const minutesInput = document.getElementById("minutesInput");
+const secondsInput = document.getElementById("secondsInput");
+const confirmProgressBtn = document.getElementById("confirmProgressBtn");
+const cancelProgressBtn = document.getElementById("cancelProgressBtn");
 
 function makeId() {
   return crypto.randomUUID();
@@ -61,6 +71,7 @@ function formatTime(seconds) {
 
 
 let modalMode = null;
+let activeMedia = null;
 
 function openAccountModal(mode) {
   modalMode = mode;
@@ -163,6 +174,69 @@ function renderApp() {
 
 closePlayerBtn.addEventListener("click", closePlayer);
 
+saveProgressBtn.addEventListener("click", () => {
+  const savedProgress = activeMedia?.progress || 0;
+
+  hoursInput.value = "";
+  minutesInput.value = "";
+  secondsInput.value = "";
+
+  if (savedProgress > 0) {
+    const hours = Math.floor(savedProgress / 3600);
+    const minutes = Math.floor((savedProgress % 3600) / 60);
+    const seconds = savedProgress % 60;
+
+    hoursInput.value = hours > 0 ? hours : "";
+    minutesInput.value = minutes;
+    secondsInput.value = seconds;
+  }
+
+  saveProgressBtn.classList.add("hidden");
+  progressInputs.classList.remove("hidden");
+});
+
+cancelProgressBtn.addEventListener("click", () => {
+  progressInputs.classList.add("hidden");
+  saveProgressBtn.classList.remove("hidden");
+});
+
+confirmProgressBtn.addEventListener("click", () => {
+  if (!activeMedia) return;
+
+  const hours = Number(hoursInput.value) || 0;
+  const minutes = Number(minutesInput.value) || 0;
+  const seconds = Number(secondsInput.value) || 0;
+
+  const progressSeconds = hours * 3600 + minutes * 60 + seconds;
+
+  activeMedia.progress = progressSeconds;
+
+  const shows = getShows();
+  const movies = getMovies();
+
+  const showIndex = shows.findIndex((show) => show.id === activeMedia.id);
+  const movieIndex = movies.findIndex((movie) => movie.id === activeMedia.id);
+
+  if (showIndex !== -1) {
+    shows[showIndex] = activeMedia;
+    saveShows(shows);
+  }
+
+  if (movieIndex !== -1) {
+    movies[movieIndex] = activeMedia;
+    saveMovies(movies);
+  }
+
+  savedProgressText.textContent = `Saved at ${formatTime(progressSeconds)}`;
+  saveProgressBtn.textContent = "Update Progress";
+
+  progressInputs.classList.add("hidden");
+  saveProgressBtn.classList.remove("hidden");
+
+  renderApp();
+});
+
+
 toggleFormBtn.addEventListener("click", () => {
   addShowForm.classList.toggle("hidden");
   addMovieForm.classList.add("hidden");
@@ -262,15 +336,39 @@ modalSubmitBtn.addEventListener("click", () => {
   }
 });
 
-function openPlayer(title, url) {
+//Function Called to open media player modal
+function openPlayer(title, url, media) {
+  activeMedia = media;
+
   playerTitle.textContent = title;
   playerFrame.src = url;
+
+  const savedProgress = media.progress || 0;
+
+  if (savedProgress > 0){
+    savedProgressText.textContent = `Saved at ${formatTime(savedProgress)}`;
+    saveProgressBtn.textContent = "Update Progress";
+  } else {
+    savedProgressText.textContent = "";
+    saveProgressBtn.textContent = "Save Progress";
+  }
+
+  if (media.season && media.episode){
+    playerNextEpisodeBtn.classList.remove("hidden");
+  } else {
+    playerNextEpisodeBtn.classList.add("hidden");
+  }
+  
+  progressInputs.classList.add("hidden");
+
   playerModal.classList.remove("hidden");
 }
 
+//Function Called to close media player modal
 function closePlayer() {
   playerFrame.src = "";
   playerModal.classList.add("hidden");
+  activeMedia = null;
 }
 
 function renderShows() {
@@ -284,10 +382,15 @@ function renderShows() {
   }
 
   for (const show of shows) {
-    const progress = getProgressForUrl(show.url);
+    const progress = show.progress || 0;
 
     const card = document.createElement("div");
     card.className = "card";
+
+    const runtimeSeconds = show.runtime ? show.runtime * 60 : 0;
+    const progressPercent = runtimeSeconds > 0
+      ? Math.min((progress / runtimeSeconds) *100, 100)
+      : 0;
 
     card.innerHTML = `
       <button class="delete-btn">X</button>
@@ -301,24 +404,59 @@ function renderShows() {
         <h3>${show.title}</h3>
         <p>S${show.season}E${show.episode}</p>
         <p>${formatTime(progress)}</p>
+        <button class="next-episode-btn">Next Episode</button>
 
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div class="progress-fill" style="width: ${progressPercent}%"></div>
         </div>
       </div>
     `;
 
     card.addEventListener("click", () => {
-      openPlayer(`${show.title} - S${show.season}E${show.episode}`, show.url);
+      openPlayer(`${show.title} - S${show.season}E${show.episode}`, show.url, show);
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
+    const nextEpisodeBtn = card.querySelector(".next-episode-btn");
+
 
     deleteBtn.addEventListener("click", (event) => {
       event.stopPropagation();
 
       const updatedShows = shows.filter((item) => item.id !== show.id);
       saveShows(updatedShows);
+      renderShows();
+    });
+
+    nextEpisodeBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+
+      const currentSeasonData = show.seasons.find(
+        (seasonData) => seasonData.seasonNumber === show.season
+      );
+
+      if (!currentSeasonData) {
+        return;
+      }
+
+      const maxEpisodes = currentSeasonData.episodeCount;
+
+      if (show.episode < maxEpisodes) {
+        show.episode += 1;
+      } else {
+        if (show.season < show.totalSeasons) {
+          show.season += 1;
+          show.episode = 1;
+        } else {
+          alert("You finished the show!");
+          return;
+        }
+      }
+
+      show.progress=0;
+      show.url = `https://mappl.tv/watch/tv/${show.tmdbId}-${show.season}-${show.episode}`;
+
+      saveShows(shows);
       renderShows();
     });
 
@@ -337,10 +475,16 @@ function renderMovies() {
   }
 
   for (const movie of movies) {
-    const progress = getProgressForUrl(movie.url);
+    const progress = movie.progress || 0;
 
     const card = document.createElement("div");
     card.className = "card";
+
+    const runtimeSeconds = movie.runtime ? movie.runtime * 60 : 0;
+
+    const progressPercent = runtimeSeconds > 0
+    ? Math.min((progress / runtimeSeconds) *100, 100)
+    : 0;
 
     card.innerHTML = `
       <button class="delete-btn">X</button>
@@ -355,13 +499,13 @@ function renderMovies() {
         <p>${formatTime(progress)}</p>
 
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div class="progress-fill" style="width: ${progressPercent}%"></div>
         </div>
       </div>
     `;
 
     card.addEventListener("click", () => {
-      openPlayer(movie.title, movie.url);
+      openPlayer(movie.title, movie.url, movie);
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
@@ -378,7 +522,7 @@ function renderMovies() {
   }
 }
 
-function addShowToLibrary(show, posterUrl, season, episode) {
+async function addShowToLibrary(show, posterUrl, season, episode) {
   if (!getCurrentAccount()) {
     alert("Sign in, create an account, or continue as Guest first.");
     return;
@@ -391,14 +535,31 @@ function addShowToLibrary(show, posterUrl, season, episode) {
 
   const shows = getShows();
 
+  const detailsResponse = await fetch(
+    `https://api.themoviedb.org/3/tv/${show.id}?api_key=${TMDB_API_KEY}`
+  );
+
+  const details = await detailsResponse.json();
+
   shows.push({
     id: makeId(),
     tmdbId: show.id,
     title: show.name,
     posterUrl,
+
     url: `https://mappl.tv/watch/tv/${show.id}-${season}-${episode}`,
+
     season,
-    episode
+    episode,
+
+    runtime: details.episode_run_time?.[0] || 0,
+
+    totalSeasons: details.number_of_seasons,
+
+    seasons: details.seasons.map((seasonData) => ({
+      seasonNumber: seasonData.season_number,
+      episodeCount: seasonData.episode_count
+    }))
   });
 
   saveShows(shows);
@@ -410,7 +571,7 @@ function addShowToLibrary(show, posterUrl, season, episode) {
   renderShows();
 }
 
-function addMoviesToLibrary(movie, posterUrl) {
+async function addMoviesToLibrary(movie, posterUrl) {
   if (!getCurrentAccount()) {
     alert("Sign in, create an account, or continue as Guest first.");
     return;
@@ -418,10 +579,17 @@ function addMoviesToLibrary(movie, posterUrl) {
 
   const movies = getMovies();
 
+  const detailsResponse = await fetch(
+    `https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}`
+  );
+
+  const details = await detailsResponse.json();
+
   movies.push({
     id: makeId(),
     tmdbId: movie.id,
     title: movie.title,
+    runtime: movie.runtime || 0,
     posterUrl,
     url: `https://mappl.tv/watch/movie/${movie.id}`
   });
@@ -597,6 +765,44 @@ async function searchMovies() {
 
 searchShowBtn.addEventListener("click", searchShows);
 searchMovieBtn.addEventListener("click", searchMovies);
+
+playerNextEpisodeBtn.addEventListener("click", () => {
+  if (!activeMedia || !activeMedia.seasons) return;
+
+  const shows = getShows();
+
+  const showIndex = shows.findIndex((show) => shows.id === activeMedia.id);
+
+  if (showIndex === -1) return;
+
+  const currentSeasonData = show.season.find(
+    (seasonData) => seasonData.seasonNumber === show.season
+  );
+
+  if (!currentSeasonData) return;
+
+  if (show.episode < currentSeasonData.episodeCount){
+    show.episode += 1;
+  } else if (show.season < show.totalSeasons){
+    show.season += 1;
+    show.episode = 1;
+  } else {
+    alert("You finished the show!");
+    return;
+  }
+
+  show.progress = 0;
+  show.url = `https://mappl.tv/watch/tv/${show.tmdbId}-${show.season}-${show.episode}`;
+
+  shows[showIndex] = show;
+  saveShows(shows);
+
+  activeMedia = show;
+
+  openPlayer(`${show.title} - S${show.season}E${show.episode}`, show.url, show);
+  renderShows();
+
+});
 
 searchInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {

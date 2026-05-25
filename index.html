@@ -72,22 +72,43 @@
     </div>
   </div>
 
-  <div id="playerModal" class="modal hidden">
-    <div class="player-card">
-      <div class="player-header">
-        <h2 id="playerTitle">Now Playing</h2>
-        <button id="closePlayerBtn">Close</button>
+    <div id="playerModal" class="modal hidden">
+      <div class="player-card">
+
+        <div class="player-header">
+          <h2 id="playerTitle">Now Playing</h2>
+
+          <div class="player-progress-section">
+            <span id="savedProgressText"></span>
+
+            <button id="saveProgressBtn">Save Progress</button>
+            <button id="playerNextEpisodeBtn" class="hidden">Next Episode</button>
+
+            <div id="progressInputs" class="hidden">
+              <input id="hoursInput" type="number" min="0" placeholder="HH">
+              <span>:</span>
+              <input id="minutesInput" type="number" min="0" max="59" placeholder="MM">
+              <span>:</span>
+              <input id="secondsInput" type="number" min="0" max="59" placeholder="SS">
+
+              <button id="confirmProgressBtn">Confirm</button>
+              <button id="cancelProgressBtn">Cancel</button>
+            </div>
+          </div>
+
+          <button id="closePlayerBtn">Close</button>
+        </div>
+
+        <iframe
+          id="playerFrame"
+          src=""
+          allowfullscreen
+          allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+        ></iframe>
+
       </div>
-
-      <iframe
-        id="playerFrame"
-        src=""
-        allowfullscreen
-        allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-      ></iframe>
     </div>
-  </div>
 
-  <script src="dashboard.js"></script>
-</body>
+    <script src="dashboard.js"></script>
+  </body>
 </html>

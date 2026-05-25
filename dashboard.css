@@ -206,7 +206,6 @@ button:active {
 }
 
 .progress-fill {
-  width: 35%;
   height: 100%;
   border-radius: 999px;
   background: #e50914;
@@ -519,4 +518,157 @@ button:active {
   height: 70vh;
   border: none;
   background: black;
+}
+
+.next-episode-btn {
+
+  
+  width: 100% !important;
+
+  margin-top: 10px !important;
+
+  padding: 10px 12px !important;
+
+  border-radius: 12px !important;
+
+  background: rgba(255,255,255,0.08) !important;
+
+  border: 1px solid rgba(255,255,255,0.1) !important;
+
+  color: white !important;
+
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.next-episode-btn:hover {
+  background: rgba(255,255,255,0.16) !important;
+
+  transform: none !important;
+}
+
+.player-progress-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+#savedProgressText {
+  color: #bbb;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+#progressInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#progressInputs input {
+  width: 70px;
+
+  padding: 8px 10px;
+
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+
+  background: rgba(255,255,255,0.08);
+
+  color: white;
+
+  text-align: center;
+}
+
+#progressInputs span {
+  color: #888;
+  font-weight: bold;
+}
+
+#confirmProgressBtn,
+#cancelProgressBtn,
+#saveProgressBtn {
+  padding: 8px 12px !important;
+
+  border-radius: 10px !important;
+
+  transform: none !important;
+}
+
+#saveProgressBtn {
+  background: rgba(255,255,255,0.08) !important;
+
+  border: 1px solid rgba(255,255,255,0.12) !important;
+
+  color: white !important;
+
+  box-shadow: none !important;
+
+  transform: none !important;
+
+  padding: 10px 14px !important;
+
+  border-radius: 12px !important;
+
+  font-size: 0.92rem !important;
+
+  font-weight: 600 !important;
+}
+
+#saveProgressBtn:hover {
+  background: rgba(255,255,255,0.16) !important;
+
+  transform: none !important;
+}
+
+#playerNextEpisodeBtn {
+  all: unset;
+
+  background: #e50914;
+
+  color: white;
+
+  height: 52px;
+
+  padding: 0 18px;
+
+  border-radius: 16px;
+
+  font-size: 1rem;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+
+  transition: 0.2s;
+}
+
+#playerNextEpisodeBtn:hover {
+  background: #ff1f1f;
+
+  transform: scale(1.03);
+}
+
+#playerNextEpisodeBtn,
+#closePlayerBtn,
+#saveProgressBtn{
+  font-size: 1rem;
+  font-weight: 700;
+  height: 52px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
