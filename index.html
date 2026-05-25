@@ -13,10 +13,12 @@
   <header>
     <h1>KevsFlix</h1>
 
-    <div class="profile-controls">
-      <label for="profileSelect">Profile</label>
-      <select id="profileSelect"></select>
-      <button id="addProfileBtn">+ Profile</button>
+    <div class="account-controls">
+      <span id="accountStatus">Not signed in</span>
+      <button id="guestBtn">Continue as Guest</button>
+      <button id="signInBtn">Sign In</button>
+      <button id="createAccountBtn">Create Account</button>
+      <button id="signOutBtn" class="hidden">Sign Out</button>
     </div>
 
     <button id="toggleFormBtn">+ Add Show</button>
@@ -50,6 +52,41 @@
     <h2 id="moviesTitle">Your Movies</h2>
     <div id="moviesGrid" class="grid"></div>
   </section>
+
+  <div id="accountModal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="modalTitle">Account</h2>
+
+      <label>Account Name</label>
+      <input id="modalAccountName" type="text" placeholder="ex: Kevin">
+
+      <label>PIN</label>
+      <input id="modalPin" type="password" placeholder="4-digit PIN">
+
+      <p id="modalError" class="modal-error"></p>
+
+      <div class="modal-actions">
+        <button id="modalCancelBtn">Cancel</button>
+        <button id="modalSubmitBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="playerModal" class="modal hidden">
+    <div class="player-card">
+      <div class="player-header">
+        <h2 id="playerTitle">Now Playing</h2>
+        <button id="closePlayerBtn">Close</button>
+      </div>
+
+      <iframe
+        id="playerFrame"
+        src=""
+        allowfullscreen
+        allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+      ></iframe>
+    </div>
+  </div>
 
   <script src="dashboard.js"></script>
 </body>

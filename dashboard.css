@@ -237,30 +237,6 @@ button:active {
   padding: 12px;
 }
 
-@media (max-width: 600px) {
-  body {
-    padding: 16px;
-  }
-
-  header {
-    align-items: stretch;
-  }
-
-  h1 {
-    width: 100%;
-    font-size: 2rem;
-  }
-
-  #toggleFormBtn,
-  #toggleFormBtnM {
-    flex: 1;
-  }
-
-  .poster,
-  .result-poster {
-    height: 320px;
-  }
-}
 /* =========================
    SPLASH SCREEN
 ========================= */
@@ -327,55 +303,220 @@ button:active {
 }
 
 /* =========================
-   PROFILE CONTROLS
+   ACCOUNT CONTROLS
 ========================= */
 
-.profile-controls {
+.account-controls {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  padding: 10px 14px;
+
+  border-radius: 18px;
+
+  background: rgba(255,255,255,0.06);
+
+  border: 1px solid rgba(255,255,255,0.12);
+
+  backdrop-filter: blur(10px);
 }
 
-.profile-controls label {
+#accountStatus {
+  color: #e5e5e5;
+
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  margin-right: 4px;
+
+  white-space: nowrap;
+}
+
+.account-controls button {
+  background: transparent !important;
+
+  color: #d7d7d7 !important;
+
+  border: none !important;
+
+  padding: 6px 10px !important;
+
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+
+  border-radius: 10px !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.account-controls button:hover {
+  color: white !important;
+
+  background: rgba(255,255,255,0.08) !important;
+
+  transform: none !important;
+}
+
+#signOutBtn {
+  color: #ff7b7b !important;
+}
+
+#signOutBtn:hover {
+  background: rgba(229, 9, 20, 0.12) !important;
+}
+
+@media (max-width: 700px) {
+  .account-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+
+  header {
+    align-items: stretch;
+  }
+
+  h1 {
+    width: 100%;
+    font-size: 2rem;
+  }
+
+  #toggleFormBtn,
+  #toggleFormBtnM {
+    flex: 1;
+  }
+
+  .poster,
+  .result-poster {
+    height: 320px;
+  }
+}
+
+/* =========================
+   ACCOUNT MODAL
+========================= */
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+
+  padding: 26px;
+
+  border-radius: 24px;
+
+  background: #121212;
+  border: 1px solid rgba(255,255,255,0.12);
+
+  box-shadow: 0 24px 70px rgba(0,0,0,0.65);
+}
+
+.modal-card h2 {
+  margin: 0 0 18px;
+}
+
+.modal-card label {
+  display: block;
+  margin: 14px 0 7px;
+
   color: #bbb;
   font-size: 0.9rem;
   font-weight: bold;
 }
 
-.profile-controls select {
-  min-width: 130px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
-  background: #151515;
+.modal-card input {
+  width: 100%;
+
+  padding: 14px;
+
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+
+  background: rgba(255,255,255,0.08);
   color: white;
+
+  font-size: 1rem;
   outline: none;
 }
 
-#addProfileBtn {
-  padding: 10px 14px;
+.modal-card input:focus {
+  border-color: #e50914;
+}
+
+.modal-error {
+  min-height: 20px;
+  margin-top: 12px;
+
+  color: #ff7b7b;
   font-size: 0.9rem;
 }
 
-#profilePinInput {
-  max-width: 180px;
+.modal-actions {
+  display: flex;
+  gap: 12px;
+
+  margin-top: 18px;
 }
 
-@media (max-width: 600px) {
-  .profile-controls {
-    width: 100%;
-    flex-wrap: wrap;
-  }
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+}
 
-  .profile-controls select {
-    flex: 1;
-  }
+/* =========================
+   PLAYER MODAL
+========================= */
 
-  #addProfileBtn {
-    flex: 1;
-  }
+.player-card {
+  width: min(1100px, 96vw);
+  background: #0b0b0b;
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,0.14);
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.75);
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.player-header h2 {
+  margin: 0;
+  margin-right: auto;
+  font-size: 1.2rem;
+}
+
+#closePlayerBtn {
+  padding: 9px 14px;
+}
+
+#playerFrame {
+  width: 100%;
+  height: 70vh;
+  border: none;
+  background: black;
 }

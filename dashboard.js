@@ -1,8 +1,7 @@
-const OLD_SHOWS_KEY = "shows";
-const OLD_MOVIES_KEY = "movies";
-
-const PROFILES_KEY = "kevsflix:profiles";
-const ACTIVE_PROFILE_KEY = "kevsflix:activeProfileId";
+const SHOWS_KEY = "shows";
+const MOVIES_KEY = "movies";
+const CURRENT_ACCOUNT_KEY = "currentAccount";
+const ACCOUNTS_KEY = "accounts";
 
 const TMDB_API_KEY = "a04a3b6afbc3480a58b0ce9e85c5a10c";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
@@ -21,61 +20,28 @@ const searchMovieBtn = document.getElementById("searchMovieBtn");
 const searchResults = document.getElementById("searchResults");
 const searchResultsM = document.getElementById("searchResultsM");
 
-const profileSelect = document.getElementById("profileSelect");
-const addProfileBtn = document.getElementById("addProfileBtn");
-const profileForm = document.getElementById("profileForm");
-const profileNameInput = document.getElementById("profileNameInput");
-const profilePinInput = document.getElementById("profilePinInput");
-const saveProfileBtn = document.getElementById("saveProfileBtn");
-const showsTitle = document.getElementById("showsTitle");
-const moviesTitle = document.getElementById("moviesTitle");
+const accountStatus = document.getElementById("accountStatus");
+const guestBtn = document.getElementById("guestBtn");
+const signInBtn = document.getElementById("signInBtn");
+const createAccountBtn = document.getElementById("createAccountBtn");
+const signOutBtn = document.getElementById("signOutBtn");
 
-toggleFormBtn.addEventListener("click", () => {
-  addShowForm.classList.toggle("hidden");
-  addMovieForm.classList.add("hidden");
-  profileForm.classList.add("hidden");
-});
+const accountModal = document.getElementById("accountModal");
+const modalTitle = document.getElementById("modalTitle");
+const modalAccountName = document.getElementById("modalAccountName");
+const modalPin = document.getElementById("modalPin");
+const modalError = document.getElementById("modalError");
+const modalCancelBtn = document.getElementById("modalCancelBtn");
+const modalSubmitBtn = document.getElementById("modalSubmitBtn");
 
-toggleFormBtnM.addEventListener("click", () => {
-  addMovieForm.classList.toggle("hidden");
-  addShowForm.classList.add("hidden");
-  profileForm.classList.add("hidden");
-});
+const playerModal = document.getElementById("playerModal");
+const playerTitle = document.getElementById("playerTitle");
+const playerFrame = document.getElementById("playerFrame");
+const closePlayerBtn = document.getElementById("closePlayerBtn");
 
-addProfileBtn.addEventListener("click", () => {
-  profileForm.classList.toggle("hidden");
-  addShowForm.classList.add("hidden");
-  addMovieForm.classList.add("hidden");
-  profileNameInput.focus();
-});
-
-saveProfileBtn.addEventListener("click", createProfileFromForm);
-
-profileNameInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    createProfileFromForm();
-  }
-});
-
-profileSelect.addEventListener("change", () => {
-  const profileId = profileSelect.value;
-  const profile = getProfileById(profileId);
-
-  if (!profile) return;
-
-  if (profile.pin) {
-    const pinAttempt = prompt(`Enter PIN for ${profile.name}:`);
-
-    if (pinAttempt !== profile.pin) {
-      alert("Wrong PIN.");
-      profileSelect.value = getActiveProfileId();
-      return;
-    }
-  }
-
-  setActiveProfileId(profileId);
-  renderApp();
-});
+function makeId() {
+  return crypto.randomUUID();
+}
 
 function formatTime(seconds) {
   seconds = Math.floor(seconds || 0);
@@ -93,172 +59,218 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function makeId() {
-  return crypto.randomUUID();
+
+let modalMode = null;
+
+function openAccountModal(mode) {
+  modalMode = mode;
+
+  modalTitle.textContent = mode === "create" ? "Create Account" : "Sign In";
+
+  modalAccountName.value = "";
+  modalPin.value = "";
+  modalError.textContent = "";
+
+  accountModal.classList.remove("hidden");
+  modalAccountName.focus();
 }
 
-function safeParse(value, fallback) {
-  try {
-    return JSON.parse(value) || fallback;
-  } catch {
-    return fallback;
-  }
+function closeAccountModal() {
+  accountModal.classList.add("hidden");
+  modalMode = null;
 }
 
-function storageKey(type) {
-  return `kevsflix:${getActiveProfileId()}:${type}`;
+function getCurrentAccount() {
+  return JSON.parse(localStorage.getItem(CURRENT_ACCOUNT_KEY));
 }
 
-function getProfiles() {
-  return safeParse(localStorage.getItem(PROFILES_KEY), []);
+function setCurrentAccount(account) {
+  localStorage.setItem(CURRENT_ACCOUNT_KEY, JSON.stringify(account));
 }
 
-function saveProfiles(profiles) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+function getAccounts() {
+  return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || [];
 }
 
-function getProfileById(profileId) {
-  return getProfiles().find((profile) => profile.id === profileId);
+function saveAccounts(accounts) {
+  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
-function getActiveProfileId() {
-  return localStorage.getItem(ACTIVE_PROFILE_KEY);
-}
+function getAccountPrefix() {
+  const account = getCurrentAccount();
 
-function setActiveProfileId(profileId) {
-  localStorage.setItem(ACTIVE_PROFILE_KEY, profileId);
-}
-
-function getActiveProfile() {
-  return getProfileById(getActiveProfileId());
-}
-
-function createDefaultProfileIfNeeded() {
-  let profiles = getProfiles();
-
-  if (profiles.length > 0) {
-    if (!getActiveProfileId() || !getProfileById(getActiveProfileId())) {
-      setActiveProfileId(profiles[0].id);
-    }
-
-    return;
+  if (!account) {
+    return "signedout";
   }
 
-  const defaultProfile = {
-    id: makeId(),
-    name: "Kevin",
-    pin: "",
-    createdAt: new Date().toISOString()
-  };
-
-  profiles = [defaultProfile];
-  saveProfiles(profiles);
-  setActiveProfileId(defaultProfile.id);
-
-  migrateOldLibraryToProfile(defaultProfile.id);
+  return account.id;
 }
 
-function migrateOldLibraryToProfile(profileId) {
-  const oldShows = safeParse(localStorage.getItem(OLD_SHOWS_KEY), []);
-  const oldMovies = safeParse(localStorage.getItem(OLD_MOVIES_KEY), []);
-
-  if (oldShows.length > 0) {
-    localStorage.setItem(`kevsflix:${profileId}:shows`, JSON.stringify(oldShows));
-  }
-
-  if (oldMovies.length > 0) {
-    localStorage.setItem(`kevsflix:${profileId}:movies`, JSON.stringify(oldMovies));
-  }
-
-  [...oldShows, ...oldMovies].forEach((item) => {
-    const oldProgressKey = `progress:${item.url}`;
-    const oldProgress = localStorage.getItem(oldProgressKey);
-
-    if (oldProgress !== null) {
-      localStorage.setItem(`kevsflix:${profileId}:progress:${item.url}`, oldProgress);
-    }
-  });
+function getShowsKey() {
+  return `${getAccountPrefix()}:${SHOWS_KEY}`;
 }
 
-function createProfileFromForm() {
-  const name = profileNameInput.value.trim();
-  const pin = profilePinInput.value.trim();
-
-  if (!name) {
-    alert("Type a profile name first.");
-    return;
-  }
-
-  const profiles = getProfiles();
-
-  const newProfile = {
-    id: makeId(),
-    name,
-    pin,
-    createdAt: new Date().toISOString()
-  };
-
-  profiles.push(newProfile);
-  saveProfiles(profiles);
-  setActiveProfileId(newProfile.id);
-
-  profileNameInput.value = "";
-  profilePinInput.value = "";
-  profileForm.classList.add("hidden");
-
-  renderApp();
+function getMoviesKey() {
+  return `${getAccountPrefix()}:${MOVIES_KEY}`;
 }
 
 function getShows() {
-  return safeParse(localStorage.getItem(storageKey("shows")), []);
+  return JSON.parse(localStorage.getItem(getShowsKey())) || [];
 }
 
 function getMovies() {
-  return safeParse(localStorage.getItem(storageKey("movies")), []);
+  return JSON.parse(localStorage.getItem(getMoviesKey())) || [];
 }
 
 function saveShows(shows) {
-  localStorage.setItem(storageKey("shows"), JSON.stringify(shows));
+  localStorage.setItem(getShowsKey(), JSON.stringify(shows));
 }
 
 function saveMovies(movies) {
-  localStorage.setItem(storageKey("movies"), JSON.stringify(movies));
+  localStorage.setItem(getMoviesKey(), JSON.stringify(movies));
 }
 
 function getProgressForUrl(url) {
-  const key = `${storageKey("progress")}:${url}`;
+  const key = `${getAccountPrefix()}:progress:${url}`;
   return Number(localStorage.getItem(key)) || 0;
 }
 
-// Temporary manual progress saver.
-// Later, this should be replaced by real player progress events.
-function saveProgressForUrl(url, seconds) {
-  const key = `${storageKey("progress")}:${url}`;
-  localStorage.setItem(key, String(seconds));
+function updateAccountUI() {
+  const currentAccount = getCurrentAccount();
+
+  if (currentAccount) {
+    accountStatus.textContent = `Signed in as ${currentAccount.name}`;
+
+    guestBtn.classList.add("hidden");
+    signInBtn.classList.add("hidden");
+    createAccountBtn.classList.add("hidden");
+    signOutBtn.classList.remove("hidden");
+  } else {
+    accountStatus.textContent = "Not signed in";
+
+    guestBtn.classList.remove("hidden");
+    signInBtn.classList.remove("hidden");
+    createAccountBtn.classList.remove("hidden");
+    signOutBtn.classList.add("hidden");
+  }
 }
 
-function renderProfileSelect() {
-  const profiles = getProfiles();
-  const activeProfileId = getActiveProfileId();
-
-  profileSelect.innerHTML = "";
-
-  profiles.forEach((profile) => {
-    const option = document.createElement("option");
-    option.value = profile.id;
-    option.textContent = profile.pin ? `${profile.name} 🔒` : profile.name;
-    profileSelect.appendChild(option);
-  });
-
-  profileSelect.value = activeProfileId;
+function renderApp() {
+  renderShows();
+  renderMovies();
+  updateAccountUI();
 }
 
-function renderTitles() {
-  const profile = getActiveProfile();
-  const name = profile ? profile.name : "Your";
+closePlayerBtn.addEventListener("click", closePlayer);
 
-  showsTitle.textContent = `${name}'s Shows`;
-  moviesTitle.textContent = `${name}'s Movies`;
+toggleFormBtn.addEventListener("click", () => {
+  addShowForm.classList.toggle("hidden");
+  addMovieForm.classList.add("hidden");
+});
+
+toggleFormBtnM.addEventListener("click", () => {
+  addMovieForm.classList.toggle("hidden");
+  addShowForm.classList.add("hidden");
+});
+
+guestBtn.addEventListener("click", () => {
+  const guestAccount = {
+    id: "guest",
+    name: "Guest",
+    isGuest: true
+  };
+
+  setCurrentAccount(guestAccount);
+  renderApp();
+});
+
+signOutBtn.addEventListener("click", () => {
+  localStorage.removeItem(CURRENT_ACCOUNT_KEY);
+  renderApp();
+});
+
+createAccountBtn.addEventListener("click", () => {
+  openAccountModal("create");
+});
+
+signInBtn.addEventListener("click", () => {
+  openAccountModal("signin");
+});
+
+modalCancelBtn.addEventListener("click", closeAccountModal);
+
+modalPin.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    modalSubmitBtn.click();
+  }
+});
+
+modalSubmitBtn.addEventListener("click", () => {
+  const name = modalAccountName.value.trim();
+  const pin = modalPin.value.trim();
+
+  if (!name || !pin) {
+    modalError.textContent = "Account name and PIN are required.";
+    return;
+  }
+
+  if (modalMode === "create") {
+    const accounts = getAccounts();
+
+    const nameAlreadyExists = accounts.some(
+      (account) => account.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (nameAlreadyExists) {
+      modalError.textContent = "An account with that name already exists.";
+      return;
+    }
+
+    const newAccount = {
+      id: makeId(),
+      name,
+      pin
+    };
+
+    accounts.push(newAccount);
+    saveAccounts(accounts);
+    setCurrentAccount(newAccount);
+
+    closeAccountModal();
+    renderApp();
+    return;
+  }
+
+  if (modalMode === "signin") {
+    const accounts = getAccounts();
+
+    const foundAccount = accounts.find(
+      (account) =>
+        account.name.toLowerCase() === name.toLowerCase() &&
+        account.pin === pin
+    );
+
+    if (!foundAccount) {
+      modalError.textContent = "No account found with that name and PIN.";
+      return;
+    }
+
+    setCurrentAccount(foundAccount);
+
+    closeAccountModal();
+    renderApp();
+  }
+});
+
+function openPlayer(title, url) {
+  playerTitle.textContent = title;
+  playerFrame.src = url;
+  playerModal.classList.remove("hidden");
+}
+
+function closePlayer() {
+  playerFrame.src = "";
+  playerModal.classList.add("hidden");
 }
 
 function renderShows() {
@@ -288,16 +300,16 @@ function renderShows() {
       <div class="card-info">
         <h3>${show.title}</h3>
         <p>S${show.season}E${show.episode}</p>
-        <p>Last saved: ${formatTime(progress)}</p>
+        <p>${formatTime(progress)}</p>
 
         <div class="progress-bar">
-          <div class="progress-fill" style="width: ${progress ? "35%" : "0%"}"></div>
+          <div class="progress-fill"></div>
         </div>
       </div>
     `;
 
     card.addEventListener("click", () => {
-      window.open(show.url, "_blank");
+      openPlayer(`${show.title} - S${show.season}E${show.episode}`, show.url);
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
@@ -340,16 +352,16 @@ function renderMovies() {
 
       <div class="card-info">
         <h3>${movie.title}</h3>
-        <p>Last saved: ${formatTime(progress)}</p>
+        <p>${formatTime(progress)}</p>
 
         <div class="progress-bar">
-          <div class="progress-fill" style="width: ${progress ? "35%" : "0%"}"></div>
+          <div class="progress-fill"></div>
         </div>
       </div>
     `;
 
     card.addEventListener("click", () => {
-      window.open(movie.url, "_blank");
+      openPlayer(movie.title, movie.url);
     });
 
     const deleteBtn = card.querySelector(".delete-btn");
@@ -367,6 +379,11 @@ function renderMovies() {
 }
 
 function addShowToLibrary(show, posterUrl, season, episode) {
+  if (!getCurrentAccount()) {
+    alert("Sign in, create an account, or continue as Guest first.");
+    return;
+  }
+
   if (!season || !episode || season < 1 || episode < 1) {
     alert("Season and episode must be 1 or higher.");
     return;
@@ -381,8 +398,7 @@ function addShowToLibrary(show, posterUrl, season, episode) {
     posterUrl,
     url: `https://mappl.tv/watch/tv/${show.id}-${season}-${episode}`,
     season,
-    episode,
-    addedAt: new Date().toISOString()
+    episode
   });
 
   saveShows(shows);
@@ -395,6 +411,11 @@ function addShowToLibrary(show, posterUrl, season, episode) {
 }
 
 function addMoviesToLibrary(movie, posterUrl) {
+  if (!getCurrentAccount()) {
+    alert("Sign in, create an account, or continue as Guest first.");
+    return;
+  }
+
   const movies = getMovies();
 
   movies.push({
@@ -402,8 +423,7 @@ function addMoviesToLibrary(movie, posterUrl) {
     tmdbId: movie.id,
     title: movie.title,
     posterUrl,
-    url: `https://mappl.tv/watch/movie/${movie.id}`,
-    addedAt: new Date().toISOString()
+    url: `https://mappl.tv/watch/movie/${movie.id}`
   });
 
   saveMovies(movies);
@@ -426,8 +446,9 @@ async function searchShows() {
   searchResults.innerHTML = "<p>Searching...</p>";
 
   try {
-    const url =
-      `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
+    const url = `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+      query
+    )}`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -518,8 +539,9 @@ async function searchMovies() {
   searchResultsM.innerHTML = "<p>Searching...</p>";
 
   try {
-    const url =
-      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(
+      query
+    )}`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -573,13 +595,6 @@ async function searchMovies() {
   }
 }
 
-function renderApp() {
-  renderProfileSelect();
-  renderTitles();
-  renderShows();
-  renderMovies();
-}
-
 searchShowBtn.addEventListener("click", searchShows);
 searchMovieBtn.addEventListener("click", searchMovies);
 
@@ -595,5 +610,4 @@ searchInputM.addEventListener("keydown", (event) => {
   }
 });
 
-createDefaultProfileIfNeeded();
 renderApp();
